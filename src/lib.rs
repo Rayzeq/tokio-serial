@@ -491,10 +491,23 @@ impl Write for SerialStream {
 #[cfg(unix)]
 mod sys {
     use super::SerialStream;
-    use std::os::unix::io::{AsRawFd, RawFd};
+    use std::os::{
+        fd::FromRawFd,
+        unix::io::{AsRawFd, RawFd},
+    };
+    use tokio::io::unix::AsyncFd;
+
     impl AsRawFd for SerialStream {
         fn as_raw_fd(&self) -> RawFd {
             self.inner.as_raw_fd()
+        }
+    }
+
+    impl FromRawFd for SerialStream {
+        unsafe fn from_raw_fd(fd: RawFd) -> Self {
+            Self {
+                inner: AsyncFd::new(mio_serial::SerialStream::from_raw_fd(fd)).unwrap(),
+            }
         }
     }
 }
